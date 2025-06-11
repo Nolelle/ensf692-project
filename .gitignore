@@ -1,0 +1,87 @@
+#############
+# OS files  #
+#############
+.DS_Store
+.AppleDouble
+.LSOverride
+
+###################
+# Python artefacts #
+###################
+# byte-code / caching
+__pycache__/
+*.py[cod]
+*$py.class
+
+# build / packaging
+build/
+dist/
+.eggs/
+*.egg-info/
+*.egg
+wheelhouse/
+
+# virtual-envs
+.env
+env/
+.venv/
+venv/
+.pyenv/
+
+# PyPI local packages (PEP 582)
+__pypackages__/
+
+# pytest / coverage
+.pytest_cache/
+htmlcov/
+.coverage*
+.cache/
+nosetests.xml
+coverage.xml
+
+# tox
+.tox/
+
+# profiling
+*.prof
+
+########################
+# Jupyter & notebooks  #
+########################
+.ipynb_checkpoints/
+
+################
+# Data files   #
+################
+# Ignore large or generated data; commit only small sample data if needed
+*.csv
+*.tsv
+*.parquet
+*.h5
+*.hdf5
+*.db
+*.sqlite
+*.feather
+*.orc
+*.arrow
+
+########################
+# IDE / editor config  #
+########################
+# VSCode
+.vscode/
+
+# PyCharm / IntelliJ
+.idea/
+
+# Sublime
+*.sublime-workspace
+*.sublime-project
+
+###########################
+# macOS + misc. binaries  #
+###########################
+Icon?
+._*
+Thumbs.db
+Desktop.ini
