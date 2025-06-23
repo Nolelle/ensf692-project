@@ -1,5 +1,5 @@
 """
-ENSF 692 Spring 2025 - Capstone Project
+ENSF 692 Spring 2025 Project
 Group 3 – Calgary Housing & Demographics Data Cleaning Module
 Authors: Peter Osaade, Edmund Yu
 Created: June 2025
