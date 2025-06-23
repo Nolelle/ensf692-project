@@ -162,12 +162,11 @@ def load_and_prepare_data(census_path, assessment_path, ward_path):
             print("\nArea Type Classification Summary:")
             print(ward["AREA_TYPE"].value_counts())
             print("\nSample classifications:")
-            sample = (
+            print(
                 ward[["COMM_STRUCTURE", "AREA_TYPE", COL_NAME]]
                 .drop_duplicates()
                 .head(10)
             )
-            print(sample)
         else:
             # Fallback if no COMM_STRUCTURE column found
             print(

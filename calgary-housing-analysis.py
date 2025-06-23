@@ -759,13 +759,9 @@ class CalgaryHousingAnalyzer:
                     ),
                 )
 
-        # Add growth rate annotations in a clean box
-        annotation_y = max_pop * 0.85  # Position in upper area of chart
-
         # Create a summary box for growth information
         growth_text_lines = []
         for area_type, data in growth_data.items():
-            change_direction = "increase" if data["growth_rate"] > 0 else "decrease"
             growth_text_lines.append(
                 f"{area_type}: {data['growth_rate']:+.1f}% ({data['change_abs']:+,} people)"
             )
