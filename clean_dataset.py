@@ -1,36 +1,28 @@
 """
-ENSF 692 – Clean and Describe Calgary Housing & Demographics Data
-----------------------------------------------------------------
-Loads, cleans, merges, and enriches three City of Calgary open data tables
-(filtered to 2016–2017 data):
+ENSF 692 Spring 2025 - Capstone Project
+Group 3 – Calgary Housing & Demographics Data Cleaning Module
+Authors: Peter Osaade, Edmund Yu
+Created: June 2025
 
-Input Files:
-  1. Civic Census by Community and Dwelling Structure
-     → CSVFiles/Civic_Census_by_Community_and_Dwelling_Structure_20250613.csv
-  2. Assessments by Community
-     → CSVFiles/Assessments by Community Jun 2025.csv
-  3. Communities by Ward
-     → CSVFiles/Communities by Ward June 2025.csv
+Calgary Housing & Demographics Data Cleaning and Processing Module
+================================================================
 
-Data Processing:
-• Standardizes column names and community names (uppercase, stripped)
-• Filters census and assessment data to 2016-2017 only
-• Merges datasets on community name and year
-• Removes duplicates and system/unclassified entries
-• Converts numeric columns (handles comma-separated values)
-• Derives AREA_TYPE classification (Inner-City vs Suburban) from community category
+Merges three City of Calgary open data tables (filtered to 2016–2017):
+  1. Civic Census by Community and Dwelling Structure  (set9‑futw)
+  2. Assessments by Community                         (p84b‑7zbi)
+  3. Communities by Ward                              (jd78‑wxjp)
 
-Calculated Metrics:
+Classification Logic:
+- Inner-City: Communities with 'INNER CITY', 'CENTRE CITY', or pre-1980s development
+- Suburban: Communities with 'BUILDING OUT', post-1980s development, or new/developing areas
+
+Derived Metrics:
   • ASSESSMENT_PER_PERSON  = MEDIAN_ASSESSMENT / RES_CNT
   • VACANCY_RATE           = DWELLINGS_VACANT / DWELLINGS_TOTAL
 
 Output:
-• Exports cleaned dataset to 'cleaned_calgary_housing_demographics.csv'
-• Prints first 5 rows, descriptive statistics, and missing value counts
-• Creates multi-index DataFrame (COMMUNITY_NAME, YEAR) sorted alphabetically
-
-The final dataset supports analysis of Calgary housing and demographic trends
-across communities and area types for the 2016-2017 period.
+- Exports cleaned dataset to 'cleaned_calgary_housing_demographics.csv'
+- Creates multi-index DataFrame (COMMUNITY_NAME, YEAR) sorted alphabetically
 """
 
 import pandas as pd
@@ -56,43 +48,90 @@ def clean_names(df, col):
         df[col] = df[col].astype(str).str.upper().str.strip()
 
 
-def map_inner_city(cat):
+def map_inner_city(comm_structure_value):
     """
-    Classifies a community as 'Inner-City' or 'Suburban' based on its category label.
+    Classify a community as 'Inner-City' or 'Suburban' based on COMM_STRUCTURE
+    value from Calgary's classification system.
 
-    Methodology:
-    - If the input 'cat' is not a string (e.g., missing or NaN), returns 'Suburban'.
-    - Converts the input to uppercase for case-insensitive comparison.
-    - If the uppercase value is one of {'CITY CENTRE', 'ESTABLISHED', 'INNER CITY'}, returns 'Inner-City'.
-    - Otherwise, returns 'Suburban'.
+    Calgary's COMM_STRUCTURE indicates development timeline:
+    - 'INNER CITY': Explicitly marked inner-city communities
+    - 'CENTRE CITY': Downtown core areas
+    - Pre-1980s decades: Established/mature communities (inner-city)
+    - Post-1980s decades: Newer suburban developments
+    - 'BUILDING OUT': Currently developing (suburban)
 
     Parameters:
-        cat (str): The community category label.
+        comm_structure_value (str): The community COMM_STRUCTURE value.
     Returns:
         str: 'Inner-City' or 'Suburban' classification.
-
-    Summary Table:
-        Input Category (case-insensitive) | Output
-        ----------------------------------|-----------
-        'CITY CENTRE'                     | Inner-City
-        'ESTABLISHED'                     | Inner-City
-        'INNER CITY'                      | Inner-City
-        Anything else or not a string     | Suburban
     """
-    if not isinstance(cat, str):
-        return "Suburban"
-    upper = cat.upper()
-    if upper == "CITY CENTRE":
+    if not isinstance(comm_structure_value, str):
+        return "Suburban"  # Default if no structure info
+
+    structure = comm_structure_value.upper().strip()
+
+    # Explicit inner-city classifications
+    inner_city_structures = {
+        "INNER CITY",
+        "CENTRE CITY",
+        "INNER-CITY",
+        "CENTER CITY",
+        "DOWNTOWN",
+    }
+
+    # Check for exact matches
+    if structure in inner_city_structures:
         return "Inner-City"
-    elif upper == "ESTABLISHED":
-        return "Inner-City"
-    elif upper == "INNER CITY":
-        return "Inner-City"
-    else:
-        return "Suburban"
+
+    # Decade-based classification
+    # Communities developed before 1980 are typically inner-city
+    inner_city_decades = {
+        "PRE 1910",
+        "PRE-1910",
+        "BEFORE 1910",
+        "1910S",
+        "1920S",
+        "1930S",
+        "1940S",
+        "1950S",
+        "1960S",
+        "1970S",
+        "1960S/1970S",
+        "1960/1970",
+        "1960-1970",
+    }
+
+    # Check decade-based classification
+    for decade in inner_city_decades:
+        if decade in structure:
+            return "Inner-City"
+
+    # Suburban indicators
+    suburban_structures = {
+        "BUILDING OUT",
+        "BUILDOUT",
+        "BUILD OUT",
+        "DEVELOPING",
+        "FUTURE",
+        "1980S",
+        "1990S",
+        "2000S",
+        "2010S",
+        "2020S",
+        "NEW",
+        "GREENFIELD",
+    }
+
+    # Check for suburban matches
+    for suburban in suburban_structures:
+        if suburban in structure:
+            return "Suburban"
+
+    # Default to Suburban for unknown structures
+    return "Suburban"
 
 
-# ------------------------------------------------------------------ main ETL
+# ------------------------------------------------------------------ load and prepare data
 
 
 def load_and_prepare_data(census_path, assessment_path, ward_path):
@@ -115,14 +154,26 @@ def load_and_prepare_data(census_path, assessment_path, ward_path):
     # Standardize ward/community DataFrame column names for merging
     ward = ward.rename(columns={"NAME": COL_NAME, "sector": "SECTOR"})
 
-    # Create AREA_TYPE column if it doesn't exist, classifying communities
+    # Create AREA_TYPE column based on COMM_STRUCTURE column (FIXED)
     if "AREA_TYPE" not in ward.columns:
-        # Try to find a column with 'category' in its name
-        cat_col = next((c for c in ward.columns if "category" in c.lower()), None)
-        # Use map_inner_city to classify, or default to 'Suburban' if not found
-        ward["AREA_TYPE"] = (
-            ward[cat_col].apply(map_inner_city) if cat_col else "Suburban"
-        )
+        if "COMM_STRUCTURE" in ward.columns:
+            # Use the COMM_STRUCTURE column for classification
+            ward["AREA_TYPE"] = ward["COMM_STRUCTURE"].apply(map_inner_city)
+            print("\nArea Type Classification Summary:")
+            print(ward["AREA_TYPE"].value_counts())
+            print("\nSample classifications:")
+            sample = (
+                ward[["COMM_STRUCTURE", "AREA_TYPE", COL_NAME]]
+                .drop_duplicates()
+                .head(10)
+            )
+            print(sample)
+        else:
+            # Fallback if no COMM_STRUCTURE column found
+            print(
+                "Warning: No COMM_STRUCTURE column found for area type classification"
+            )
+            ward["AREA_TYPE"] = "Suburban"
 
     # Standardize census DataFrame column names for consistency
     census = census.rename(
@@ -217,7 +268,7 @@ def main():
 
     # Export the cleaned dataset to CSV
     df.to_csv("cleaned_calgary_housing_demographics.csv")
-    print("Dataset exported to 'cleaned_calgary_housing_demographics.csv'")
+    print("\nDataset exported to 'cleaned_calgary_housing_demographics.csv'")
 
     print("=" * 60)
     print("First 5 Rows of the Cleaned Dataset")
@@ -230,6 +281,13 @@ def main():
     print("\n" + "=" * 60)
     print("Missing values per column:")
     print(df.isna().sum())
+
+    # Show area type distribution
+    print("\n" + "=" * 60)
+    print("Area Type Distribution in Final Dataset:")
+    area_counts = df.groupby("AREA_TYPE").size()
+    print(area_counts)
+    print("=" * 60)
 
 
 if __name__ == "__main__":
