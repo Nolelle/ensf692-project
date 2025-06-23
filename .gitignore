@@ -54,7 +54,7 @@ coverage.xml
 # Data files   #
 ################
 # Ignore large or generated data; commit only small sample data if needed
-*.csv
+# *.csv
 *.tsv
 *.parquet
 *.h5
