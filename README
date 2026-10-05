@@ -1,6 +1,6 @@
 # ENSF 692 Spring 2025 - Final Project
 
-## 📚 Learning Outcomes
+##  Learning Outcomes
 * Design and document a terminal-based Python application
 * Select, import, and manipulate different sets of data
 * Merge multiple datasets using Pandas
@@ -10,7 +10,7 @@
 * Display data using Matplotlib
 * Collaboration with other programmers
 
-## 💻 Program Specifications
+##  Program Specifications
 For this final project, you have flexibility to design and develop your own terminal-based data analysis program in Python.
 You must work in a team of 2-3 members.
 Your application must meet the following design specifications:
